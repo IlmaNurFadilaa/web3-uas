@@ -1,4 +1,3 @@
-// FILE: backend/server.js
 const express = require('express');
 const cors = require('cors');
 const app = express();
@@ -6,7 +5,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// DATA KITA (Pastikan variabelnya campaigns)
 const campaigns = [
     { 
         id: 1, 
@@ -31,9 +29,31 @@ const campaigns = [
     }
 ];
 
-// ENDPOINT HARUS SAMA DENGAN FRONTEND
+let transactionHistory = [];
+
 app.get('/api/transactions', (req, res) => {
     res.json({ success: true, data: campaigns });
+});
+
+app.get('/api/history', (req, res) => {
+    res.json({ success: true, data: transactionHistory });
+});
+
+app.post('/api/history', (req, res) => {
+    const { title, hash, amount, date } = req.body;
+    
+    const newRecord = {
+        id: transactionHistory.length + 1,
+        title,
+        hash,
+        amount,
+        date
+    };
+
+    transactionHistory.unshift(newRecord);
+
+    console.log("Riwayat Baru Disimpan:", newRecord);
+    res.json({ success: true, message: "Riwayat tersimpan" });
 });
 
 const PORT = 5000;

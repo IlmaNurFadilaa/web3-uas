@@ -5,15 +5,18 @@ import './App.css';
 
 function App() {
   const [account, setAccount] = useState(null);
+  const [balance, setBalance] = useState("0"); // STATE BARU: Simpan Saldo
+  const [showDropdown, setShowDropdown] = useState(false); // STATE BARU: Buka/Tutup Dropdown
+
   const [campaigns, setCampaigns] = useState([]);
   const [history, setHistory] = useState([]);
   const [loadingId, setLoadingId] = useState(null);
 
   const [toast, setToast] = useState({ show: false, title: '', message: '', type: '', link: null });
 
+  // --- LOGIKA NOTIFIKASI ---
   const showToast = (title, message, type = 'info', link = null) => {
     setToast({ show: true, title, message, type, link });
-
     if (!link) {
       setTimeout(() => {
         setToast((prev) => ({ ...prev, show: false }));
@@ -23,11 +26,13 @@ function App() {
 
   const closeToast = () => setToast((prev) => ({ ...prev, show: false }));
 
+  // --- KONEKSI WALLET & AMBIL SALDO ---
   const connectWallet = async () => {
     if (window.ethereum) {
       try {
         await window.ethereum.request({ method: 'eth_requestAccounts' });
 
+        // Force Sepolia
         try {
           await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
@@ -37,7 +42,14 @@ function App() {
 
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
-        setAccount(await signer.getAddress());
+        const address = await signer.getAddress();
+        
+        setAccount(address);
+
+        // --- AMBIL SALDO (NEW) ---
+        const balanceBigInt = await provider.getBalance(address);
+        const balanceEth = ethers.formatEther(balanceBigInt); // Ubah Wei ke ETH
+        setBalance(parseFloat(balanceEth).toFixed(4)); // Ambil 4 angka belakang koma
         
         showToast("Connected!", "Dompet berhasil terhubung.", "success");
 
@@ -49,6 +61,12 @@ function App() {
     }
   };
 
+  // --- TOGGLE DROPDOWN ---
+  const toggleDropdown = () => {
+    setShowDropdown(!showDropdown);
+  };
+
+  // --- AMBIL DATA ---
   const fetchHistory = () => {
     axios.get('http://localhost:5000/api/history')
       .then(res => setHistory(res.data.data))
@@ -62,6 +80,7 @@ function App() {
     fetchHistory();
   }, []);
 
+  // --- FUNGSI DONASI ---
   const handleDonate = async (id, title) => {
     if (!account) {
       showToast("Akses Ditolak", "Silakan Connect Wallet terlebih dahulu.", "error");
@@ -83,8 +102,11 @@ function App() {
       showToast("Transaksi Dikirim", "Menunggu konfirmasi blockchain...", "info");
 
       await tx.wait(); 
-
       setLoadingId(null); 
+
+      // Update Saldo setelah donasi (Optional, biar real-time)
+      const newBal = await provider.getBalance(account);
+      setBalance(parseFloat(ethers.formatEther(newBal)).toFixed(4));
 
       try {
         const newHistory = {
@@ -94,22 +116,16 @@ function App() {
           date: new Date().toLocaleString()
         };
         await axios.post('http://localhost:5000/api/history', newHistory);
-        fetchHistory(); 
+        fetchHistory();
       } catch (backendError) {
         console.warn("Gagal simpan history:", backendError);
       }
 
-      showToast(
-        "Donasi Berhasil! 🎉", 
-        `Terima kasih telah berdonasi untuk ${title}.`, 
-        "success",
-        `https://sepolia.etherscan.io/tx/${tx.hash}`
-      );
+      showToast("Donasi Berhasil! 🎉", `Terima kasih donasi untuk ${title}.`, "success", `https://sepolia.etherscan.io/tx/${tx.hash}`);
 
     } catch (error) {
       setLoadingId(null);
       console.error(error);
-      
       if (error.code === 'INSUFFICIENT_FUNDS') {
          showToast("Saldo Kurang", "Pastikan Anda punya ETH Sepolia.", "error");
       } else if (error.code === 4001) { 
@@ -123,70 +139,76 @@ function App() {
   return (
     <div className="app-container">
 
-      {/* ---  NOTIFICATION  --- */}
+      {/* TOAST NOTIFICATION */}
       {toast.show && (
         <div className="toast-container">
           <div className={`toast ${toast.type}`}>
-            
             <div className="toast-icon">
-              {toast.type === 'success' && (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                </svg>
-              )}
-              {toast.type === 'error' && (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="8" x2="12" y2="12"></line>
-                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                </svg>
-              )}
-              {toast.type === 'info' && (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="16" x2="12" y2="12"></line>
-                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                </svg>
-              )}
+              {toast.type === 'success' && ( <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> )}
+              {toast.type === 'error' && ( <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> )}
+              {toast.type === 'info' && ( <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> )}
             </div>
-
             <div className="toast-content">
               <div className="toast-title">{toast.title}</div>
               <div className="toast-message">{toast.message}</div>
-              {toast.link && (
-                <a href={toast.link} target="_blank" rel="noreferrer" className="toast-link">
-                  Lihat Bukti &rarr;
-                </a>
-              )}
+              {toast.link && ( <a href={toast.link} target="_blank" rel="noreferrer" className="toast-link">Lihat Bukti &rarr;</a> )}
             </div>
-
-            <button className="toast-close" onClick={closeToast}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
+            <button className="toast-close" onClick={closeToast}>&times;</button>
           </div>
         </div>
       )}
 
-      {/* --- NAVBAR --- */}
+      {/* --- NAVBAR UPDATED --- */}
       <nav className="navbar">
         <div className="logo">Web3 Transactions</div>
-        <div className="nav-action">
-          <button className="btn-connect" onClick={connectWallet}>
-            {account ? account.substring(0, 6) + "..." : "Connect Wallet"}
+        
+        {/* Container Tombol Connect (Relative untuk Dropdown) */}
+        <div className="nav-action" style={{ position: 'relative' }}>
+          
+          <button 
+            className="btn-connect" 
+            // Kalau sudah login, klik tombol buat toggle dropdown. Kalau belum, buat connect.
+            onClick={account ? toggleDropdown : connectWallet}
+          >
+            {account ? account.substring(0, 6) + "..." + account.substring(38) : "Connect Wallet"}
           </button>
+
+          {/* --- DROPDOWN MENU --- */}
+          {account && showDropdown && (
+            <div className="wallet-dropdown">
+              <div className="dropdown-header">
+                <span className="status-dot"></span>
+                <span className="status-text">Connected</span>
+              </div>
+              
+              <div className="dropdown-item">
+                <span className="label">Balance</span>
+                <span className="value">{balance} ETH</span>
+              </div>
+              
+              <div className="dropdown-divider"></div>
+              
+              <div className="dropdown-item">
+                <span className="label">Wallet</span>
+                <span className="value-small">{account.substring(0, 15)}...</span>
+              </div>
+
+              <div className="dropdown-footer">
+                <button className="btn-disconnect" onClick={() => {setAccount(null); setShowDropdown(false);}}>
+                  Disconnect
+                </button>
+              </div>
+            </div>
+          )}
+          {/* --------------------- */}
+
         </div>
       </nav>
 
-      {/* --- HERO SECTION --- */}
       <header className="hero">
         <h1 className="hero-title">Donation App</h1>
       </header>
 
-      {/* --- CAMPAIGN CARDS --- */}
       <main className="cards-container">
         {campaigns.map((item) => (
           <div className="card" key={item.id}>
@@ -194,7 +216,6 @@ function App() {
               <span className="badge">{item.category}</span>
               <h3 className="card-title">{item.title}</h3>
               <p className="card-info">Target: {item.target}</p>
-              
               <button 
                 className="btn-donate"
                 onClick={() => handleDonate(item.id, item.title)}
@@ -211,7 +232,6 @@ function App() {
         ))}
       </main>
 
-      {/* --- HISTORY SECTION --- */}
       {account && (
         <section className="history-section">
           <h2 className="section-title">📜 Riwayat Transaksi</h2>
@@ -235,9 +255,7 @@ function App() {
                       <td>{record.title}</td>
                       <td style={{color: '#10b981', fontWeight: 'bold'}}>{record.amount}</td>
                       <td>
-                        <a href={`https://sepolia.etherscan.io/tx/${record.hash}`} target="_blank" rel="noreferrer" className="hash-link">
-                          Success ↗
-                        </a>
+                        <a href={`https://sepolia.etherscan.io/tx/${record.hash}`} target="_blank" rel="noreferrer" className="hash-link">Success ↗</a>
                       </td>
                     </tr>
                   ))}

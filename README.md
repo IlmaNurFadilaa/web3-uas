@@ -1,15 +1,15 @@
 # Web3 Donation App (UAS Pemrograman Web)
 
-**Nama:** ILMA NUR FADILA
-**NIM:** 241111043
+**Nama :** ILMA NUR FADILA
+**NIM :** 241111043
 
-## Deskripsi Project
+### Deskripsi Project
 
 Aplikasi ini adalah platform donasi berbasis Web3 sederhana. User dapat menghubungkan dompet digital (MetaMask), memilih kampanye donasi, dan mengirimkan donasi menggunakan Ethereum (ETH) di jaringan Sepolia Testnet.
 
 Aplikasi ini juga mencatat riwayat transaksi yang berhasil.
 
-## Fitur Utama
+### Fitur Utama
 
 1.  **Connect Wallet :** Integrasi dengan MetaMask untuk login.
 2.  **Donasi ETH :** Mengirim transaksi blockchain di jaringan Sepolia.
@@ -17,18 +17,18 @@ Aplikasi ini juga mencatat riwayat transaksi yang berhasil.
 4.  **Notifikasi Modern :** Tampilan notifikasi status (Loading, Sukses, Gagal) yang interaktif.
 5.  **Validasi Jaringan :** Otomatis meminta pengguna pindah ke jaringan Sepolia jika salah jaringan.
 
-## Teknologi yang Digunakan
+### Teknologi yang Digunakan
 
 - **Frontend :** React.js
 - **Backend :** Node.js & Express (API riwayat transaksi)
 - **Blockchain Library :** Ethers.js v6
 - **Styling :** CSS Native (Responsive & Modern UI)
 
-## Cara Menjalankan (Instalasi)
+### Cara Menjalankan (Instalasi)
 
 Pastikan sudah menginstall **Node.js** dan punya **MetaMask** di browser.
 
-### Langkah 1 : Jalankan backend / server
+#### Langkah 1 : Jalankan backend / server
 
 1. Buka terminal dan masuk ke folder backend :
    cd backend
@@ -39,7 +39,7 @@ Pastikan sudah menginstall **Node.js** dan punya **MetaMask** di browser.
 3. Jalankan server :
    node server.js
 
-### Langkah 2 : Jalankan frontend / website
+#### Langkah 2 : Jalankan frontend / website
 
 1. Buka terminal baru dan masuk folder frontend :
    cd frontend
@@ -50,7 +50,7 @@ Pastikan sudah menginstall **Node.js** dan punya **MetaMask** di browser.
 3. Jalankan website :
    npm start
 
-### Langakah 3 : Alur penggunaan website
+#### Langakah 3 : Alur penggunaan website
 
 1. Hubungkan dengan metamask (Connect wallet) :
    Klik button 'Connect Wallet' yanga da di pojok kanan atas
